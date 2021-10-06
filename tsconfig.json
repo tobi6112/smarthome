@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "allowJs": false, // R.I.P
+        "module": "CommonJS",
+        "esModuleInterop": true,
+        "strict": true,
+        "target": "ES2019",
+        "sourceMap": true,
+        "outDir": "dist"
+    },
+    "include": [
+        "src"
+    ]
+}
