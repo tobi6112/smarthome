@@ -2,9 +2,10 @@
   "name": "smarthome",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "dist/app.js",
   "scripts": {
-    "start": "tsc && node dist/app.js",
+    "start": "node dist/app.js",
+    "compile": "tsc --sourceMap false",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
