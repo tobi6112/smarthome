@@ -39,13 +39,5 @@ client.on("message", (topic, payload) => {
             client.publish("zigbee2mqtt/bedroom/set", JSON.stringify(setState));
             client.publish("zigbee2mqtt/bedroom/set", JSON.stringify(setLightTransition));
         }
-        if(event.event == "awake") {
-            const setState = {
-                state: "OFF",
-                brightness: 0,
-                transition: 20
-            };
-            client.publish("zigbee2mqtt/bedroom/set", JSON.stringify(setState));
-        }
     }
 });
