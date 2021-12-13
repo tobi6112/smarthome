@@ -1,7 +1,10 @@
 import * as mqtt from "mqtt";
 import { SleepAsAndroidEvent } from "./types";
+import dotenv from "dotenv";
 
-const client = mqtt.connect("mqtt://raspberrypi:1883");
+dotenv.config();
+
+const client = mqtt.connect(`mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT}`);
 
 client.on("error", (err) => {
     console.error(`Could not connect to MQTT Broker: ${err}`);
@@ -15,6 +18,7 @@ client.subscribe("SleepAsAndroid", (err) => {
     if(!err) {
         console.log("Successfully subscribed to SleepAsAndroid Topic");
     } else {
+        console.error(err);
         console.error("Could not subscribe to SleepAsAndroid Topic");
     }
 });
