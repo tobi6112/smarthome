@@ -38,7 +38,7 @@ client.on("message", (topic, payload) => {
             };
             const setLightTransition = {
                 brightness: 255,
-                transition: 60 * 5
+                transition: 90
             }
             client.publish("zigbee2mqtt/bedroom/set", JSON.stringify(setState));
             client.publish("zigbee2mqtt/bedroom/set", JSON.stringify(setLightTransition));
