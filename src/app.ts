@@ -6,6 +6,13 @@ dotenv.config();
 
 const client = mqtt.connect(`mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT}`);
 
+const turnAllTheLightsOn = () => {
+    const stateOn = {
+        state: "ON"
+    };
+    client.publish("zigbee2mqtt/switch_bedroom_1/set", JSON.stringify(stateOn));
+}
+
 client.on("error", (err) => {
     console.error(`Could not connect to MQTT Broker: ${err}`);
 });
@@ -28,20 +35,7 @@ client.on("message", (topic, payload) => {
     if(topic === "SleepAsAndroid") {
         const event = JSON.parse(payload.toString()) as SleepAsAndroidEvent;
         if(event.event == "alarm_alert_start") {
-            const setState = {
-                state: "ON",
-                brightness: 0,
-                color: {
-                    x: 1,
-                    y: 1
-                },
-            };
-            const setLightTransition = {
-                brightness: 255,
-                transition: 90
-            }
-            client.publish("zigbee2mqtt/bedroom/set", JSON.stringify(setState));
-            client.publish("zigbee2mqtt/bedroom/set", JSON.stringify(setLightTransition));
+            turnAllTheLightsOn();
         }
     }
 });
