@@ -1,4 +1,4 @@
-FROM node:16-alpine3.12 as build
+FROM node:18-alpine AS build
     WORKDIR /app
 
     COPY package*.json /app/
@@ -7,7 +7,7 @@ FROM node:16-alpine3.12 as build
     COPY . /app/
     RUN npm run compile
 
-FROM node:16-alpine3.12
+FROM node:18-alpine
     WORKDIR /app
     ENV NODE_ENV=production
     EXPOSE 3000
