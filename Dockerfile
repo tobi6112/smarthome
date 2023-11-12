@@ -14,7 +14,7 @@ FROM node:20-alpine
 
     ENV TZ 'Europe/Berlin'
     RUN apk add --no-cache tzdata
-    RUN cp /usr/share/zoneinfo/${TZ} /etc/localtime
+    RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime
 
     COPY package*.json /app/
     RUN npm ci
