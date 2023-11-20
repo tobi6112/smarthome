@@ -5,13 +5,21 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const client = mqtt.connect(`mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT}`);
+const timeoutId: Number | null = null;
 
 const turnAllTheLightsOn = () => {
     const stateOn = {
         state: "ON"
     };
-    client.publish("zigbee2mqtt/switch_bedroom_1/set", JSON.stringify(stateOn));
-}
+    client.publish("zigbee2mqtt/lamp_bedroom_1/set", JSON.stringify(stateOn));
+};
+
+const turnAllTheLightsOff = () => {
+    const stateOff = {
+        state: "OFF"
+    };
+    client.publish("zigbee2mqtt/lamp_bedroom_1/set", JSON.stringify(stateOff));
+};
 
 client.on("error", (err) => {
     console.error(`Could not connect to MQTT Broker: ${err}`);
@@ -36,6 +44,13 @@ client.on("message", (topic, payload) => {
         const event = JSON.parse(payload.toString()) as SleepAsAndroidEvent;
         if(event.event == "alarm_alert_start") {
             turnAllTheLightsOn();
+        }
+
+        if(event.event == "alarm_alert_dismiss") {
+            if(timeoutId) clearTimeout(timeoutId);
+
+            // 10 Minutes to wake up
+            timeoutId = setTimeout(turnAllTheLightsOff, 10 * 60 * 1000);
         }
     }
 });
