@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const client = mqtt.connect(`mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT}`);
-let timeoutId: number | null = null;
+let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
 const turnAllTheLightsOn = () => {
     const stateOn = {
