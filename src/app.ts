@@ -10,17 +10,16 @@ let timeoutId: ReturnType<typeof setTimeout> | null = null;
 const turnAllTheLightsOn = () => {
     const stateOn = {
         state: "ON",
-        brightness: 180,
-        color: {
-            hsv: "44,13,99"
-        }
+        brightness: 100,
+        transition: 90
     };
     client.publish("zigbee2mqtt/lamp_bedroom_1/set", JSON.stringify(stateOn));
 };
 
 const turnAllTheLightsOff = () => {
     const stateOff = {
-        state: "OFF"
+        state: "OFF",
+        brightness: 0
     };
     client.publish("zigbee2mqtt/lamp_bedroom_1/set", JSON.stringify(stateOff));
 };
