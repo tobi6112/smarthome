@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const bedroomLampTopic = "zigbee2mqtt/lamp_bedroom_1/set";
 const client = mqtt.connect(`mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT}`);
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -13,7 +14,7 @@ const turnAllTheLightsOn = () => {
         brightness: 100,
         transition: 90
     };
-    client.publish("zigbee2mqtt/lamp_bedroom_1/set", JSON.stringify(stateOn));
+    client.publish(bedroomLampTopic, JSON.stringify(stateOn));
 };
 
 const turnAllTheLightsOff = () => {
@@ -21,11 +22,15 @@ const turnAllTheLightsOff = () => {
         state: "OFF",
         brightness: 0
     };
-    client.publish("zigbee2mqtt/lamp_bedroom_1/set", JSON.stringify(stateOff));
+    client.publish(bedroomLampTopic, JSON.stringify(stateOff));
+};
+
+const resetTimeout = () => {
+    if (timeoutId) clearTimeout(timeoutId);
 };
 
 client.on("error", (err) => {
-    console.error(`Could not connect to MQTT Broker: ${err}`);
+    console.error("Could not connect to MQTT Broker:", err);
 });
 
 client.on("connect", () => {
@@ -42,7 +47,13 @@ client.subscribe("SleepAsAndroid", (err) => {
 });
 
 client.on("message", (topic, payload) => {
-    console.log(`Recieved Message: '${topic}' with '${payload}'`);
+    console.log(`Received Message: '${topic}' with '${payload}'`);
+
+    // If we overwrote the bedroom lamp, we should not care about the timeout anymore
+    if (topic === bedroomLampTopic) {
+        resetTimeout();
+    }
+
     if(topic === "SleepAsAndroid") {
         const event = JSON.parse(payload.toString()) as SleepAsAndroidEvent;
         if(event.event == "alarm_alert_start") {
@@ -50,9 +61,9 @@ client.on("message", (topic, payload) => {
         }
 
         if(event.event == "alarm_alert_dismiss") {
-            if(timeoutId) clearTimeout(timeoutId);
+            resetTimeout();
 
-            // 10 Minutes to wake up
+            // Time to wake up otherwise turn the lights off
             timeoutId = setTimeout(turnAllTheLightsOff, 10 * 60 * 1000);
         }
     }
