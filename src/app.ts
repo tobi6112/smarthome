@@ -19,8 +19,7 @@ const turnAllTheLightsOn = () => {
 
 const turnAllTheLightsOff = () => {
     const stateOff = {
-        state: "OFF",
-        brightness: 0
+        state: "OFF"
     };
     client.publish(bedroomLampTopic, JSON.stringify(stateOff));
 };
