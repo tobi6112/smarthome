@@ -13,19 +13,27 @@ env:
 jobs:
 
   build:
-
-    runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm/v7
-          - linux/arm64
+        os: ["linux"]
+        arch:
+          - amd64
+          - arm32v7
+
+    runs-on: ${{ (contains('arm32v7', matrix.arch) && 'macos') || 'ubuntu' }}-latest
 
     steps:
     - uses: actions/checkout@v4
+    - name: Setup Docker for MacOS
+      if: ${{ contains('arm32v7', matrix.arch) }}
+      run: |
+        set -ex
+        brew install colima docker docker-buildx
+        mkdir -p /Users/runner/.docker/cli-plugins/
+        ln -sfn /usr/local/opt/docker-buildx/bin/docker-buildx \
+                /Users/runner/.docker/cli-plugins/docker-buildx
+        colima start
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Set up Docker Buildx
