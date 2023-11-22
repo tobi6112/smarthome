@@ -63,7 +63,7 @@ client.on("message", (topic, payload) => {
             resetTimeout();
 
             // Time to wake up otherwise turn the lights off
-            timeoutId = setTimeout(turnAllTheLightsOff, 10 * 60 * 1000);
+            timeoutId = setTimeout(turnAllTheLightsOff, 15 * 60 * 1000);
         }
     }
 });
