@@ -13,27 +13,12 @@ env:
 jobs:
 
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["linux"]
-        arch:
-          - amd64
-          # - arm32v7
 
-    runs-on: ${{ (contains('arm32v7', matrix.arch) && 'macos') || 'ubuntu' }}-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
-    - name: Setup Docker for MacOS
-      if: ${{ contains('arm32v7', matrix.arch) }}
-      run: |
-        set -ex
-        brew install colima docker docker-buildx
-        mkdir -p /Users/runner/.docker/cli-plugins/
-        ln -sfn /usr/local/opt/docker-buildx/bin/docker-buildx \
-                /Users/runner/.docker/cli-plugins/docker-buildx
-        colima start
+    
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Set up Docker Buildx
@@ -43,16 +28,17 @@ jobs:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       uses: docker/metadata-action@v5
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: ${{ matrix.platform }}
         labels: ${{ steps.meta.outputs.labels }}
         outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
     
