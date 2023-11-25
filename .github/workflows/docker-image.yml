@@ -19,7 +19,7 @@ jobs:
         os: ["linux"]
         arch:
           - amd64
-          - arm32v7
+          # - arm32v7
 
     runs-on: ${{ (contains('arm32v7', matrix.arch) && 'macos') || 'ubuntu' }}-latest
 
