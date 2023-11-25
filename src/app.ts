@@ -46,7 +46,7 @@ client.subscribe("SleepAsAndroid", (err) => {
 });
 
 client.on("message", (topic, payload) => {
-    console.log(`Received Message: '${topic}' with '${payload}'`);
+    console.trace(`Received Message: '${topic}' with '${payload}'`);
 
     // If we overwrote the bedroom lamp, we should not care about the timeout anymore
     if (topic === bedroomLampTopic) {
