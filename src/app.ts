@@ -11,7 +11,7 @@ let timeoutId: ReturnType<typeof setTimeout> | null = null;
 const turnAllTheLightsOn = () => {
     const stateOn = {
         state: "ON",
-        brightness: 100,
+        brightness: 150,
         transition: 90
     };
     client.publish(bedroomLampTopic, JSON.stringify(stateOn));
