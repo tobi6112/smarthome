@@ -34,7 +34,7 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=branch
-          type=raw,value=${{ github.run_number }}
+          type=raw,value=${{ github.head_ref || github.ref_name }}-${{ github.sha }}-${{ github.run_number }}
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
