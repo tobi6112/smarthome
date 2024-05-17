@@ -60,9 +60,8 @@ client.on("message", (topic, payload) => {
     // If we toggled the lamp manually, there is nothing left to do
     if (topic === bedroomLampTopic) {
         resetTimeout();
-    }
-
-    if (topic === sleepAsAndroidTopic) {
+    } 
+    else if (topic === sleepAsAndroidTopic) {
         const event = JSON.parse(payload.toString()) as SleepAsAndroidEvent;
         if(event.event == "alarm_alert_start") {
             turnAllTheLightsOn();
@@ -75,10 +74,12 @@ client.on("message", (topic, payload) => {
             timeoutId = setTimeout(turnAllTheLightsOff, 15 * 60 * 1000);
         }
     }
-
-    if (topic === kitchenLampTopic) {
+    else if (topic === kitchenSwitchTopic) {
         const state = payload.toString().toUpperCase() as State;
         const desiredLampState = { state };
         client.publish(kitchenLampTopic, JSON.stringify(desiredLampState));
+    }
+    else {
+        console.trace(`No mapping found for topic '${topic}'`);
     }
 });
