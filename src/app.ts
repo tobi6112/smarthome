@@ -1,10 +1,13 @@
 import * as mqtt from "mqtt";
-import { SleepAsAndroidEvent } from "./types";
+import { SleepAsAndroidEvent, State } from "./types";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const kitchenSwitchTopic = "zigbee2mqtt/switch_kitchen_1/action";
+const kitchenLampTopic = "zigbee2mqtt/lamp_kitchen_1/set";
 const bedroomLampTopic = "zigbee2mqtt/lamp_bedroom_1/set";
+const sleepAsAndroidTopic = "SleepAsAndroid";
 const client = mqtt.connect(`mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT}`);
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -28,6 +31,17 @@ const resetTimeout = () => {
     if (timeoutId) clearTimeout(timeoutId);
 };
 
+const subscribe = (topic: string) => {
+    client.subscribe(topic, (err) => {
+        if (!err) {
+            console.log(`Successfully subscribed to topic '${topic}'`);
+        } else {
+            console.error(err);
+            console.error(`Could not subscribe to topic '${topic}'`);
+        }
+    });
+}
+
 client.on("error", (err) => {
     console.error("Could not connect to MQTT Broker:", err);
 });
@@ -36,24 +50,19 @@ client.on("connect", () => {
     console.log("Successfully connected to MQTT Broker");
 });
 
-client.subscribe("SleepAsAndroid", (err) => {
-    if(!err) {
-        console.log("Successfully subscribed to SleepAsAndroid Topic");
-    } else {
-        console.error(err);
-        console.error("Could not subscribe to SleepAsAndroid Topic");
-    }
-});
+subscribe(sleepAsAndroidTopic);
+subscribe(bedroomLampTopic);
+subscribe(kitchenSwitchTopic);
 
 client.on("message", (topic, payload) => {
     console.trace(`Received Message: '${topic}' with '${payload}'`);
 
-    // If we overwrote the bedroom lamp, we should not care about the timeout anymore
+    // If we toggled the lamp manually, there is nothing left to do
     if (topic === bedroomLampTopic) {
         resetTimeout();
     }
 
-    if(topic === "SleepAsAndroid") {
+    if (topic === sleepAsAndroidTopic) {
         const event = JSON.parse(payload.toString()) as SleepAsAndroidEvent;
         if(event.event == "alarm_alert_start") {
             turnAllTheLightsOn();
@@ -65,5 +74,11 @@ client.on("message", (topic, payload) => {
             // Time to wake up otherwise turn the lights off
             timeoutId = setTimeout(turnAllTheLightsOff, 15 * 60 * 1000);
         }
+    }
+
+    if (topic === kitchenLampTopic) {
+        const state = payload.toString().toUpperCase() as State;
+        const desiredLampState = { state };
+        client.publish(kitchenLampTopic, JSON.stringify(desiredLampState));
     }
 });

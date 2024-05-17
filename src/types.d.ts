@@ -1,3 +1,5 @@
+export type State = "ON" | "OFF";
+
 export type SleepAsAndroidEvent = SimpleEvent | AlarmSnoozeEvent | TimeToBedEvent | ShowSkipNextEvent | AlarmEvent;
 
 export type SimpleEvent = {
