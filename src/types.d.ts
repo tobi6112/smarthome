@@ -1,4 +1,23 @@
 export type State = "ON" | "OFF";
+export type HueState =
+    | "ON_PRESS"
+    | "ON_HOLD"
+    | "ON_PRESS_RELEASE"
+    | "ON_HOLD_RELEASE"
+    | "OFF_PRESS"
+    | "OFF_HOLD"
+    | "OFF_PRESS_RELEASE"
+    | "OFF_HOLD_RELEASE"
+    | "UP_PRESS"
+    | "UP_HOLD"
+    | "UP_PRESS_RELEASE"
+    | "UP_HOLD_RELEASE"
+    | "DOWN_PRESS"
+    | "DOWN_HOLD"
+    | "DOWN_PRESS_RELEASE"
+    | "DOWN_HOLD_RELEASE"
+    | "RECALL_0"
+    | "RECALL_1"
 
 export type SleepAsAndroidEvent = SimpleEvent | AlarmSnoozeEvent | TimeToBedEvent | ShowSkipNextEvent | AlarmEvent;
 
