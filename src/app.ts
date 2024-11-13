@@ -102,16 +102,16 @@ function handleHueSwitch(state: HueState) {
 
     if (stateToggles.includes(state)) {
         desiredState = {
-            state: state.split("_")[0]
+            state: "TOGGLE"
         };
     }
     else if (brightnessToggles.includes(state)) {
-        const stepSize = 10;
+        const stepSize = 25;
         desiredState = {
             "brightness_step": state.startsWith("UP") ? stepSize : 0 - stepSize
         }
     } else if (brightnessMoveStart.includes(state)) {
-        const stepSize = 10;
+        const stepSize = 25;
         desiredState = {
             "brightness_move": state.startsWith("UP") ? stepSize : 0 - stepSize
         }
