@@ -108,7 +108,8 @@ function handleHueSwitch(state: HueState) {
     else if (brightnessToggles.includes(state)) {
         const stepSize = 25;
         desiredState = {
-            "brightness_step": state.startsWith("UP") ? stepSize : 0 - stepSize
+            "brightness_step": state.startsWith("UP") ? stepSize : 0 - stepSize,
+            transition: 1
         }
     } else if (brightnessMoveStart.includes(state)) {
         const stepSize = 25;
