@@ -6,16 +6,20 @@ import { stat } from "fs";
 dotenv.config();
 
 const kitchenSwitchTopic = "zigbee2mqtt/switch_kitchen_1/action";
-const kitchenLampTopic = "zigbee2mqtt/lamp_kitchen_1/set";
-const bedroomLampTopic = "zigbee2mqtt/lamp_bedroom_1/set";
-const livingRoomLampTopic = "zigbee2mqtt/lamp_living_room_1/set";
+const setKitchenLampTopic = "zigbee2mqtt/lamp_kitchen_1/set";
+const setBedroomLampTopic = "zigbee2mqtt/lamp_bedroom_1/set";
+const setLivingRoomLampTopic = "zigbee2mqtt/lamp_living_room_1/set";
+const getLivingRoomLampTopic = "zigbee2mqtt/lamp_living_room_1";
 const livingRoomSwitchTopic = "zigbee2mqtt/switch_living_room_1/action";
 const sleepAsAndroidTopic = "SleepAsAndroid";
 
 // Smarthome bridge
-const bridgeBrightnessLivingRoomTopic = "smarthome/lamp_living_room_1/brightness";
-const bridgeColorTempLivingRoomTopic = "smarthome/lamp_living_room_1/color_temp";
-const bridgeColorHexLivingRoomTopic = "smarthome/lamp_living_room_1/color_hex";
+const getBridgeBrightnessLivingRoomTopic = "smarthome/lamp_living_room_1/brightness";
+const setBridgeBrightnessLivingRoomTopic = "smarthome/lamp_living_room_1/brightness/set";
+const getBridgeColorTempLivingRoomTopic = "smarthome/lamp_living_room_1/color_temp";
+const setBridgeColorTempLivingRoomTopic = "smarthome/lamp_living_room_1/color_temp/set";
+const getBridgeColorHexLivingRoomTopic = "smarthome/lamp_living_room_1/color_hex";
+const setBridgeColorHexLivingRoomTopic = "smarthome/lamp_living_room_1/color_hex/set";
 
 
 const client = mqtt.connect(`mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT}`);
@@ -27,14 +31,14 @@ const turnAllTheLightsOn = () => {
         brightness: 150,
         transition: 90
     };
-    client.publish(bedroomLampTopic, JSON.stringify(stateOn));
+    client.publish(setBedroomLampTopic, JSON.stringify(stateOn));
 };
 
 const turnAllTheLightsOff = () => {
     const stateOff = {
         state: "OFF"
     };
-    client.publish(bedroomLampTopic, JSON.stringify(stateOff));
+    client.publish(setBedroomLampTopic, JSON.stringify(stateOff));
 };
 
 const resetTimeout = () => {
@@ -61,22 +65,24 @@ client.on("connect", () => {
 });
 
 subscribe(sleepAsAndroidTopic);
-subscribe(bedroomLampTopic);
+subscribe(setBedroomLampTopic);
 subscribe(kitchenSwitchTopic);
 subscribe(livingRoomSwitchTopic);
 
-bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeBrightnessLivingRoomTopic, "brightness");
-bridgePlaintextToJsonTopic(bridgeBrightnessLivingRoomTopic, livingRoomLampTopic, "brightness", { transition: 1 });
-bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeColorTempLivingRoomTopic, "color_temp");
-bridgePlaintextToJsonTopic(bridgeColorTempLivingRoomTopic, livingRoomLampTopic, "color_temp", { transition: 1 });
-bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeColorHexLivingRoomTopic, "color.hex");
-bridgePlaintextToJsonTopic(bridgeColorHexLivingRoomTopic, livingRoomLampTopic, "color.hex", { transition: 1 });
+bridgeJsonToPlaintextTopic(getLivingRoomLampTopic, getBridgeBrightnessLivingRoomTopic, "brightness");
+bridgePlaintextToJsonTopic(setBridgeBrightnessLivingRoomTopic, setLivingRoomLampTopic, "brightness", { transition: 1 });
+bridgeJsonToPlaintextTopic(getLivingRoomLampTopic, getBridgeColorTempLivingRoomTopic, "color_temp");
+bridgePlaintextToJsonTopic(setBridgeColorTempLivingRoomTopic, setLivingRoomLampTopic, "color_temp", { transition: 1 });
+bridgeJsonToPlaintextTopic(getLivingRoomLampTopic, getBridgeColorHexLivingRoomTopic, "color.hex");
+bridgePlaintextToJsonTopic(setBridgeColorHexLivingRoomTopic, setLivingRoomLampTopic, "color.hex", { transition: 1 });
 
 client.on("message", (topic, payload) => {
-    console.trace(`Received Message: '${topic}' with '${payload}'`);
+    console.debug(`Received Message: '${topic}' with '${payload}'`);
+});
 
+client.on("message", (topic, payload) => {
     // If we toggled the lamp manually, there is nothing left to do
-    if (topic === bedroomLampTopic) {
+    if (topic === setBedroomLampTopic) {
         resetTimeout();
     } 
     else if (topic === sleepAsAndroidTopic) {
@@ -95,14 +101,14 @@ client.on("message", (topic, payload) => {
     else if (topic === kitchenSwitchTopic) {
         const state = payload.toString().toUpperCase() as State;
         const desiredLampState = { state };
-        client.publish(kitchenLampTopic, JSON.stringify(desiredLampState));
+        client.publish(setKitchenLampTopic, JSON.stringify(desiredLampState));
     }
     else if (topic === livingRoomSwitchTopic) {
         const state = payload.toString().toUpperCase() as HueState;
         handleHueSwitch(state);
     }
     else {
-        console.trace(`No mapping found for topic '${topic}'`);
+        console.debug(`No mapping found for topic '${topic}'`);
     }
 });
 
@@ -135,21 +141,24 @@ function handleHueSwitch(state: HueState) {
             "brightness_move": 0
         }
     }
-    client.publish(livingRoomLampTopic, JSON.stringify(desiredState));
+    client.publish(setLivingRoomLampTopic, JSON.stringify(desiredState));
 }
 
 function bridgeJsonToPlaintextTopic(subTopic: string, pubTopic: string, path: string) {
     client.subscribe(subTopic);
     client.on("message", (topic, payload) => {
-        if (topic !== subTopic) return;
+        if (topic !== subTopic || !payload) return;
 
         const jsonPayload = JSON.parse(payload.toString());
         const get = (obj: any, path: string): any => { 
             const keys = path.split('.');
             const lastKey = keys.pop()!;
-            const lastObj = keys.reduce((obj, key) => 
-                obj[key] = obj[key] || {}, 
-                obj); 
+            let lastObj = obj;
+
+            for (const key of keys) {
+                lastObj = lastObj[key] || {};
+            }
+
             return lastObj[lastKey];
         };  
         // if (res.length === 0) {
@@ -161,29 +170,39 @@ function bridgeJsonToPlaintextTopic(subTopic: string, pubTopic: string, path: st
         // }
 
         const extracted = get(jsonPayload, path);
-        client.publish(pubTopic, extracted);
+        if (!extracted) {
+            console.warn(`No result found for path: '%s'`, path);
+            return;
+        }
+        const extractedString = String(extracted);
+        console.debug(`Briding '%s' to '%s' with value '%s'`, subTopic, pubTopic, extractedString);
+        client.publish(pubTopic, extractedString);
     });
 }
 
 function bridgePlaintextToJsonTopic(subTopic: string, pubTopic: string, property: string, additionalProps?: any) {
     client.subscribe(subTopic);
     client.on("message", (topic, payload) => {
-        if (topic !== subTopic) return;
+        if (topic !== subTopic || !payload) return;
 
         const jsonPayload = {
             ...additionalProps
         };
 
-        const set = (obj: any, path: string, val: any) => { 
+        const set = (obj: any, path: string, val: any) => {
             const keys = path.split('.');
             const lastKey = keys.pop()!;
-            const lastObj = keys.reduce((obj, key) => 
-                obj[key] = obj[key] || {}, 
-                obj); 
+            let lastObj = obj;
+
+            for (const key of keys) {
+                lastObj[key] = {};
+                lastObj = lastObj[key];
+            }
             lastObj[lastKey] = val;
         };  
-        set(jsonPayload, property, payload);
+        set(jsonPayload, property, payload.toString());
 
+        console.debug(`Briding '%s' to '%s' with value '%O'`, subTopic, pubTopic, jsonPayload);
         client.publish(pubTopic, JSON.stringify(jsonPayload));
     });
 }
