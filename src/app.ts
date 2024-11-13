@@ -2,7 +2,6 @@ import * as mqtt from "mqtt";
 import { HueState, SleepAsAndroidEvent, State } from "./types";
 import dotenv from "dotenv";
 import { stat } from "fs";
-import * as jp from "jsonpath";
 
 dotenv.config();
 
@@ -66,11 +65,11 @@ subscribe(bedroomLampTopic);
 subscribe(kitchenSwitchTopic);
 subscribe(livingRoomSwitchTopic);
 
-bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeBrightnessLivingRoomTopic, "$.brightness");
+bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeBrightnessLivingRoomTopic, "brightness");
 bridgePlaintextToJsonTopic(bridgeBrightnessLivingRoomTopic, livingRoomLampTopic, "brightness", { transition: 1 });
-bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeColorTempLivingRoomTopic, "$.color_temp");
+bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeColorTempLivingRoomTopic, "color_temp");
 bridgePlaintextToJsonTopic(bridgeColorTempLivingRoomTopic, livingRoomLampTopic, "color_temp", { transition: 1 });
-bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeColorHexLivingRoomTopic, "$.color.hex");
+bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeColorHexLivingRoomTopic, "color.hex");
 bridgePlaintextToJsonTopic(bridgeColorHexLivingRoomTopic, livingRoomLampTopic, "color.hex", { transition: 1 });
 
 client.on("message", (topic, payload) => {
@@ -139,22 +138,29 @@ function handleHueSwitch(state: HueState) {
     client.publish(livingRoomLampTopic, JSON.stringify(desiredState));
 }
 
-function bridgeJsonToPlaintextTopic(subTopic: string, pubTopic: string, jsonPath: string) {
+function bridgeJsonToPlaintextTopic(subTopic: string, pubTopic: string, path: string) {
     client.subscribe(subTopic);
     client.on("message", (topic, payload) => {
         if (topic !== subTopic) return;
 
         const jsonPayload = JSON.parse(payload.toString());
-        const res = jp.query(jsonPayload, jsonPath);
-        if (res.length === 0) {
-            console.warn(`No result found. topic: '%s', path: '%s'`, subTopic, jsonPath);
-            return;
-        }
-        if (res.length > 1) {
-            console.warn(`Received more results than expected. Defaulting to first. topic: '%s', path: '%s', results: '%O'`, subTopic, jsonPath, res);
-        }
+        const get = (obj: any, path: string): any => { 
+            const keys = path.split('.');
+            const lastKey = keys.pop()!;
+            const lastObj = keys.reduce((obj, key) => 
+                obj[key] = obj[key] || {}, 
+                obj); 
+            return lastObj[lastKey];
+        };  
+        // if (res.length === 0) {
+        //     console.warn(`No result found. topic: '%s', path: '%s'`, subTopic, path);
+        //     return;
+        // }
+        // if (res.length > 1) {
+        //     console.warn(`Received more results than expected. Defaulting to first. topic: '%s', path: '%s', results: '%O'`, subTopic, path, res);
+        // }
 
-        const extracted = res[0];
+        const extracted = get(jsonPayload, path);
         client.publish(pubTopic, extracted);
     });
 }
