@@ -2,6 +2,7 @@ import * as mqtt from "mqtt";
 import { HueState, SleepAsAndroidEvent, State } from "./types";
 import dotenv from "dotenv";
 import { stat } from "fs";
+import * as jp from "jsonpath";
 
 dotenv.config();
 
@@ -11,6 +12,13 @@ const bedroomLampTopic = "zigbee2mqtt/lamp_bedroom_1/set";
 const livingRoomLampTopic = "zigbee2mqtt/lamp_living_room_1/set";
 const livingRoomSwitchTopic = "zigbee2mqtt/switch_living_room_1/action";
 const sleepAsAndroidTopic = "SleepAsAndroid";
+
+// Smarthome bridge
+const bridgeBrightnessLivingRoomTopic = "smarthome/lamp_living_room_1/brightness";
+const bridgeColorTempLivingRoomTopic = "smarthome/lamp_living_room_1/color_temp";
+const bridgeColorHexLivingRoomTopic = "smarthome/lamp_living_room_1/color_hex";
+
+
 const client = mqtt.connect(`mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT}`);
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -57,6 +65,13 @@ subscribe(sleepAsAndroidTopic);
 subscribe(bedroomLampTopic);
 subscribe(kitchenSwitchTopic);
 subscribe(livingRoomSwitchTopic);
+
+bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeBrightnessLivingRoomTopic, "$.brightness");
+bridgePlaintextToJsonTopic(bridgeBrightnessLivingRoomTopic, livingRoomLampTopic, "brightness", { transition: 1 });
+bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeColorTempLivingRoomTopic, "$.color_temp");
+bridgePlaintextToJsonTopic(bridgeColorTempLivingRoomTopic, livingRoomLampTopic, "color_temp", { transition: 1 });
+bridgeJsonToPlaintextTopic(livingRoomLampTopic, bridgeColorHexLivingRoomTopic, "$.color.hex");
+bridgePlaintextToJsonTopic(bridgeColorHexLivingRoomTopic, livingRoomLampTopic, "color.hex", { transition: 1 });
 
 client.on("message", (topic, payload) => {
     console.trace(`Received Message: '${topic}' with '${payload}'`);
@@ -122,4 +137,47 @@ function handleHueSwitch(state: HueState) {
         }
     }
     client.publish(livingRoomLampTopic, JSON.stringify(desiredState));
+}
+
+function bridgeJsonToPlaintextTopic(subTopic: string, pubTopic: string, jsonPath: string) {
+    client.subscribe(subTopic);
+    client.on("message", (topic, payload) => {
+        if (topic !== subTopic) return;
+
+        const jsonPayload = JSON.parse(payload.toString());
+        const res = jp.query(jsonPayload, jsonPath);
+        if (res.length === 0) {
+            console.warn(`No result found. topic: '%s', path: '%s'`, subTopic, jsonPath);
+            return;
+        }
+        if (res.length > 1) {
+            console.warn(`Received more results than expected. Defaulting to first. topic: '%s', path: '%s', results: '%O'`, subTopic, jsonPath, res);
+        }
+
+        const extracted = res[0];
+        client.publish(pubTopic, extracted);
+    });
+}
+
+function bridgePlaintextToJsonTopic(subTopic: string, pubTopic: string, property: string, additionalProps?: any) {
+    client.subscribe(subTopic);
+    client.on("message", (topic, payload) => {
+        if (topic !== subTopic) return;
+
+        const jsonPayload = {
+            ...additionalProps
+        };
+
+        const set = (obj: any, path: string, val: any) => { 
+            const keys = path.split('.');
+            const lastKey = keys.pop()!;
+            const lastObj = keys.reduce((obj, key) => 
+                obj[key] = obj[key] || {}, 
+                obj); 
+            lastObj[lastKey] = val;
+        };  
+        set(jsonPayload, property, payload);
+
+        client.publish(pubTopic, JSON.stringify(jsonPayload));
+    });
 }
